@@ -1,0 +1,13 @@
+[package]
+name = "gist_blog"
+version = "0.1.0"
+authors = ["Darin Minamoto <darinm223@gmail.com>"]
+
+[dependencies]
+futures = "0.1.7"
+tokio-core = "0.1"
+tera = "0.7"
+
+[dependencies.hyper]
+branch = "master"
+git = "https://github.com/hyperium/hyper"
