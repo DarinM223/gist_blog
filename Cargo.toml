@@ -7,6 +7,9 @@ authors = ["Darin Minamoto <darinm223@gmail.com>"]
 futures = "0.1.7"
 tokio-core = "0.1"
 tera = "0.7"
+diesel = { version = "0.10.0", features = ["postgres"] }
+diesel_codegen = { version = "0.10.0", features = ["postgres"] }
+dotenv = "0.8.0"
 
 [dependencies.hyper]
 branch = "master"
