@@ -1,37 +1,27 @@
-extern crate dotenv;
-extern crate futures;
-extern crate hyper;
-extern crate tokio_core;
-
 #[macro_use]
 extern crate diesel;
 #[macro_use]
 extern crate diesel_codegen;
 #[macro_use]
+extern crate serde_derive;
+#[macro_use]
 extern crate tera;
+
+extern crate chrono;
+extern crate futures;
+extern crate hyper;
+extern crate tokio_core;
 
 pub mod handlers;
 pub mod service;
 pub mod models;
 pub mod schema;
 
-use diesel::prelude::*;
-use diesel::pg::PgConnection;
-use dotenv::dotenv;
-use std::env;
-
 use hyper::server::Http;
 use service::GistBlog;
 use tokio_core::reactor::Core;
 use tokio_core::net::TcpListener;
 use futures::Stream;
-
-fn establish_connection() -> PgConnection {
-    dotenv().ok();
-
-    let database_uri = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    PgConnection::establish(&database_uri).expect(&format!("Error connecting to {}", database_uri))
-}
 
 fn main() {
     let addr = "127.0.0.1:1337".parse().unwrap();

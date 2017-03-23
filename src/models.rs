@@ -1,4 +1,3 @@
-use diesel::types::Timestamptz;
 use schema::{gists, users};
 
 #[derive(Identifiable, Queryable, Associations)]
@@ -8,7 +7,7 @@ pub struct User {
     pub id: String, // TODO(DarinM223): add other user based statistics here.
 }
 
-#[derive(Identifiable, Queryable, Associations)]
+#[derive(Identifiable, Queryable, Associations, Serialize)]
 #[belongs_to(User)]
 pub struct Gist {
     /// The id of the Github gist.
@@ -19,8 +18,6 @@ pub struct Gist {
     pub title: String,
     /// The text of the gist.
     pub body: String,
-    /// The date and time when the gist was created.
-    pub created: Timestamptz,
 }
 
 #[derive(Insertable)]

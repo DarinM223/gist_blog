@@ -1,35 +1,36 @@
-use diesel::pg::PgConnection;
+use diesel::Connection;
+use diesel::sqlite::SqliteConnection;
 use futures::Future;
-
 use handlers;
 use hyper;
-use hyper::{Get, Post, Client};
+use hyper::{Get, Post};
+use hyper::client::{Client, HttpConnector};
 use hyper::server::{Service, Request, Response};
-
-use tera::Tera;
-use tokio_core;
-use tokio_core::reactor::Handle;
-use super::establish_connection;
 use std::cell::RefCell;
 use std::rc::Rc;
+use tera::Tera;
+use tokio_core::reactor::Handle;
 
 pub const USER_ROUTE_MATCH: &'static str = "/user/";
+pub const DATABASE_URI: &'static str = "test.sqlite";
 
 pub struct Context {
     pub tera: Rc<RefCell<Tera>>,
-    pub conn: PgConnection,
-    pub handle: Handle,
+    pub conn: SqliteConnection,
+    pub client: Client<HttpConnector>,
 }
 
 impl Context {
     pub fn new(handle: Handle) -> Context {
         let tera = compile_templates!("templates/**/*");
-        let conn = establish_connection();
+        let conn = SqliteConnection::establish(&DATABASE_URI)
+            .expect(&format!("Error connecting to {}", DATABASE_URI));
+        let client = Client::new(&handle);
 
         Context {
             tera: Rc::new(RefCell::new(tera)),
             conn: conn,
-            handle: handle,
+            client: client,
         }
     }
 }

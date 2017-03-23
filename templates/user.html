@@ -5,5 +5,10 @@
 
   <body>
     <h1>User: {{ username }}</h1>
+
+    {% for result in results %}
+      <h2>{{result.title}}</h2>
+      <p>{{result.body}}</p>
+    {% endfor %}
   </body>
 </html>
