@@ -4,20 +4,22 @@ use futures::Future;
 use handlers;
 use hyper;
 use hyper::{Get, Post};
-use hyper::client::{Client, HttpConnector};
+use hyper::client::Client;
 use hyper::server::{Service, Request, Response};
+use hyper_tls::HttpsConnector;
 use std::cell::RefCell;
 use std::rc::Rc;
 use tera::Tera;
 use tokio_core::reactor::Handle;
 
 pub const USER_ROUTE_MATCH: &'static str = "/user/";
+pub const GIST_ROUTE_MATCH: &'static str = "/gist/";
 pub const DATABASE_URI: &'static str = "test.sqlite";
 
 pub struct Context {
     pub tera: Rc<RefCell<Tera>>,
     pub conn: SqliteConnection,
-    pub client: Client<HttpConnector>,
+    pub client: Rc<Client<HttpsConnector>>,
 }
 
 impl Context {
@@ -25,12 +27,14 @@ impl Context {
         let tera = compile_templates!("templates/**/*");
         let conn = SqliteConnection::establish(&DATABASE_URI)
             .expect(&format!("Error connecting to {}", DATABASE_URI));
-        let client = Client::new(&handle);
+        let client = Client::configure()
+            .connector(HttpsConnector::new(4, &handle)) // Allow https:// requests.
+            .build(&handle);
 
         Context {
             tera: Rc::new(RefCell::new(tera)),
             conn: conn,
-            client: client,
+            client: Rc::new(client),
         }
     }
 }
@@ -52,12 +56,17 @@ impl Service for GistBlog {
     type Future = Box<Future<Item = Response, Error = hyper::Error>>;
 
     fn call(&self, req: Request) -> Self::Future {
-        match (req.method(), req.path()) {
-            (&Get, "/") => handlers::handle_root(&self.context),
-            (&Get, path) if path.starts_with(USER_ROUTE_MATCH) => {
-                handlers::handle_user(&self.context, path.to_string())
+        let path = req.path().to_string();
+        let method = req.method().clone();
+        match (method, path.as_str()) {
+            (Get, "/") => handlers::handle_root(&self.context),
+            (Get, path) if path.starts_with(USER_ROUTE_MATCH) => {
+                handlers::handle_user(&self.context, req)
             }
-            (&Post, "/publish") => handlers::handle_publish(&self.context),
+            (Get, path) if path.starts_with(GIST_ROUTE_MATCH) => {
+                handlers::handle_gist(&self.context, req)
+            }
+            (Post, "/publish") => handlers::handle_publish(&self.context, req),
             _ => handlers::handle_not_found(&self.context),
         }
     }

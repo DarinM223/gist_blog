@@ -13,7 +13,12 @@ dotenv = "0.8.0"
 chrono = "0.3"
 serde = "0.9"
 serde_derive = "0.9"
+serde_json = "0.9"
 
 [dependencies.hyper]
 branch = "master"
 git = "https://github.com/hyperium/hyper"
+
+[dependencies.hyper-tls]
+branch = "master"
+git = "https://github.com/hyperium/hyper-tls"
