@@ -102,7 +102,6 @@ pub fn handle_user(service_context: &Context, req: Request) -> HandleFuture {
     let name = path.trim_left_matches(USER_ROUTE_MATCH).to_string();
     let conn = service_context.pool.clone().get().unwrap();
 
-    // TODO(DarinM223): handle error
     let results = gists.filter(user_id.eq(name.clone()))
         .limit(10)
         .load::<Gist>(&*conn)
@@ -124,10 +123,23 @@ pub fn handle_gist(service_context: &Context, req: Request) -> HandleFuture {
     use schema::gists::dsl::*;
 
     let path = req.path().to_string();
-    let name = path.trim_left_matches(GIST_ROUTE_MATCH).to_string();
+    let gist_id = path.trim_left_matches(GIST_ROUTE_MATCH).to_string();
+    let conn = service_context.pool.clone().get().unwrap();
 
-    // TODO(DarinM223): retrieve gist and display in markdown view
-    future::ok(Response::new().with_status(StatusCode::Ok)).boxed()
+    match gists.find(gist_id.clone()).first::<Gist>(&*conn) {
+        Ok(gist) => {
+            let mut context = tera::Context::new();
+            context.add("gist", &gist);
+
+            let html_body = service_context.tera.borrow_mut().render("gist.html", context).unwrap();
+            future::ok(Response::new()
+                    .with_header(ContentLength(html_body.len() as u64))
+                    .with_body(html_body))
+                .boxed()
+        }
+        // TODO(DarinM223): also return a 404 page that describes the problem.
+        Err(_) => future::ok(Response::new().with_status(StatusCode::NotFound)).boxed(),
+    }
 }
 
 /// Handler for POST /publish which should publish a gist for a user.
@@ -148,9 +160,8 @@ pub fn handle_publish(service_context: &Context, req: Request) -> HandleFuture {
             get_gist(serialized, client)
         })
         .and_then(move |new_gist| {
-            println!("Inserting: {:?}", new_gist);
             let conn = pool.get().unwrap();
-            diesel::insert(&NewGist::from(&new_gist))
+            diesel::insert_or_replace(&NewGist::from(&new_gist))
                 .into(gists::table)
                 .execute(&*conn)
                 .expect("Error saving new gist");
