@@ -1,4 +1,3 @@
-use diesel::Connection;
 use diesel::sqlite::SqliteConnection;
 use futures::Future;
 use handlers;
@@ -7,6 +6,8 @@ use hyper::{Get, Post};
 use hyper::client::Client;
 use hyper::server::{Service, Request, Response};
 use hyper_tls::HttpsConnector;
+use r2d2::{Config, Pool};
+use r2d2_diesel::ConnectionManager;
 use std::cell::RefCell;
 use std::rc::Rc;
 use tera::Tera;
@@ -18,22 +19,23 @@ pub const DATABASE_URI: &'static str = "test.sqlite";
 
 pub struct Context {
     pub tera: Rc<RefCell<Tera>>,
-    pub conn: SqliteConnection,
+    pub pool: Pool<ConnectionManager<SqliteConnection>>,
     pub client: Rc<Client<HttpsConnector>>,
 }
 
 impl Context {
     pub fn new(handle: Handle) -> Context {
         let tera = compile_templates!("templates/**/*");
-        let conn = SqliteConnection::establish(&DATABASE_URI)
-            .expect(&format!("Error connecting to {}", DATABASE_URI));
+        let config = Config::default();
+        let manager = ConnectionManager::<SqliteConnection>::new(DATABASE_URI);
+        let pool = Pool::new(config, manager).expect("Failed to create database pool");
         let client = Client::configure()
             .connector(HttpsConnector::new(4, &handle)) // Allow https:// requests.
             .build(&handle);
 
         Context {
             tera: Rc::new(RefCell::new(tera)),
-            conn: conn,
+            pool: pool,
             client: Rc::new(client),
         }
     }
