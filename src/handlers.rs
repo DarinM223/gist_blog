@@ -2,85 +2,17 @@ use diesel;
 use diesel::prelude::*;
 use futures::{future, Stream};
 use futures::Future;
-use hyper::{Error, Get, StatusCode, Uri};
-use hyper::client;
-use hyper::header::{ContentLength, UserAgent};
+use hyper::{Error, StatusCode};
+use hyper::header::ContentLength;
 use hyper::server::{Request, Response, Service};
-use hyper_tls::HttpsConnector;
 use models::*;
 use serde_json;
 use service::{Context, GistBlog, GIST_ROUTE_MATCH, USER_ROUTE_MATCH};
-use std::collections::HashMap;
-use std::rc::Rc;
 use tera;
+use utils;
+use utils::PublishRequest;
 
 type HandleFuture = <GistBlog as Service>::Future;
-
-#[derive(Deserialize, Debug)]
-pub struct PublishRequest {
-    pub username: String,
-    pub title: String,
-    pub gistid: String,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct FileResponse {
-    pub size: i32,
-    pub raw_url: String,
-    pub language: String,
-    pub content: String,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct OwnerResponse {
-    pub login: String,
-    pub id: i32,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct GistResponse {
-    pub url: String,
-    pub id: String,
-    pub description: String,
-    pub owner: OwnerResponse,
-    pub files: HashMap<String, FileResponse>,
-}
-
-pub fn get_gist<'a>(params: PublishRequest,
-                    client: Rc<client::Client<HttpsConnector>>)
-                    -> Box<Future<Item = Gist, Error = Error>> {
-    let url = format!("https://api.github.com/gists/{}", params.gistid).parse::<Uri>().unwrap();
-
-    let mut req = client::Request::new(Get, url);
-    req.headers_mut().set(UserAgent("gist_blog".to_string()));
-    let fut = client.request(req)
-        .and_then(|res| {
-            res.body().fold(vec![], |mut acc, chunk| {
-                acc.extend_from_slice(&chunk);
-                Ok::<_, Error>(acc)
-            })
-        })
-        .and_then(move |body| {
-            let body = String::from_utf8_lossy(&body[..]);
-            let gist: GistResponse = serde_json::from_str(&body).unwrap();
-
-            let mut concat_body = String::new();
-            for (_, ref file) in &gist.files {
-                concat_body.push_str(file.content.as_str());
-            }
-
-            let new_gist = Gist {
-                id: params.gistid,
-                user_id: params.username,
-                title: params.title,
-                body: concat_body,
-            };
-
-            future::ok(new_gist)
-        });
-
-    Box::new(fut)
-}
 
 /// Handler for GET / which should direct people to create their account.
 pub fn handle_root(service_context: &Context) -> HandleFuture {
@@ -157,7 +89,7 @@ pub fn handle_publish(service_context: &Context, req: Request) -> HandleFuture {
         .and_then(move |body| {
             let body_str = String::from_utf8(body).unwrap();
             let serialized: PublishRequest = serde_json::from_str(&body_str).unwrap();
-            get_gist(serialized, client)
+            utils::get_gist(serialized, client)
         })
         .and_then(move |new_gist| {
             let conn = pool.get().unwrap();

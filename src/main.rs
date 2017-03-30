@@ -16,10 +16,12 @@ extern crate r2d2_diesel;
 extern crate serde_json;
 extern crate tokio_core;
 
+pub mod github;
 pub mod handlers;
 pub mod service;
 pub mod models;
 pub mod schema;
+pub mod utils;
 
 use hyper::server::Http;
 use service::GistBlog;

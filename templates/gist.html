@@ -2,8 +2,19 @@
   <head>
     <title>Gist page</title>
   </head>
-  <body>
-    <h1>{{ gist.title }}</h1>
-    <p>{{ gist.body }}</p>
-  </body>
+
+  <div id="markdown" style="display:none;">
+    {{ gist.body }}
+  </div>
+  <div id="html"></div>
+
+  <script src="https://cdn.rawgit.com/showdownjs/showdown/1.6.3/dist/showdown.min.js"></script>
+  <script>
+    var converter = new showdown.Converter()
+    var markdownNode = document.getElementById('markdown')
+    var text = markdownNode.innerHTML
+    var html = converter.makeHtml(text)
+    var htmlNode = document.getElementById('html')
+    htmlNode.innerHTML = html
+  </script>
 </html>
