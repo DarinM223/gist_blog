@@ -36,6 +36,7 @@ pub fn get_gist<'a>(params: PublishRequest,
         // Convert body into JSON, concat all the file markdown contents, and return a Gist.
         .and_then(move |body| {
             let body = String::from_utf8_lossy(&body[..]);
+            // TODO(DarinM223): handle JSON parsing errors.
             let gist: github::Gist = serde_json::from_str(&body).unwrap();
 
             let mut concat_body = String::new();

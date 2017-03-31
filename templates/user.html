@@ -4,12 +4,40 @@
   </head>
 
   <body>
-    <h1>User: {{ username }}</h1>
+    <h1>User: <span id="username">{{ username }}</span></h1>
 
     {% for result in results %}
       <div>
         <a href="/gist/{{result.id}}">{{result.title}}</a>
       </div>
     {% endfor %}
+
+    <form action="javascript:void(0);">
+      <h3>Add a new gist</h3>
+      Gistid: <input type="text" id="gistid" name="gistid"><br>
+      Title: <input type="text" id="title" name="title"><br>
+      <input type="submit" id="submit" value="Submit"><br>
+    </form>
+
+    <script>
+      document.getElementById('submit').addEventListener('click', function () {
+        var gistid = document.getElementById('gistid').value
+        var title = document.getElementById('title').value
+        var json = {
+          username: 'DarinM223',
+          title: title,
+          gistid: gistid,
+        }
+        var body = JSON.stringify(json)
+
+        var xhr = new XMLHttpRequest()
+        xhr.open('POST', '/publish', true)
+        xhr.setRequestHeader('Content-type', 'application/json')
+        xhr.onload = function () {
+          window.location.reload()
+        }
+        xhr.send(body)
+      })
+    </script>
   </body>
 </html>

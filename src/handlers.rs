@@ -16,11 +16,8 @@ type HandleFuture = <GistBlog as Service>::Future;
 
 /// Handler for GET / which should direct people to create their account.
 pub fn handle_root(service_context: &Context) -> HandleFuture {
-    let mut context = tera::Context::new();
-    context.add("text", &"Hello world!".to_string());
+    let context = tera::Context::new();
     let body = service_context.tera.borrow_mut().render("index.html", context).unwrap();
-
-    // TODO(DarinM223): render home page
 
     future::ok(Response::new().with_header(ContentLength(body.len() as u64)).with_body(body))
         .boxed()
@@ -69,14 +66,12 @@ pub fn handle_gist(service_context: &Context, req: Request) -> HandleFuture {
                     .with_body(html_body))
                 .boxed()
         }
-        // TODO(DarinM223): also return a 404 page that describes the problem.
-        Err(_) => future::ok(Response::new().with_status(StatusCode::NotFound)).boxed(),
+        Err(_) => handle_not_found(service_context),
     }
 }
 
 /// Handler for POST /publish which should publish a gist for a user.
 pub fn handle_publish(service_context: &Context, req: Request) -> HandleFuture {
-    // TODO(DarinM223): handle authentication
     use schema::gists;
 
     let (_, _, _, _, body) = req.deconstruct();
@@ -104,6 +99,12 @@ pub fn handle_publish(service_context: &Context, req: Request) -> HandleFuture {
 }
 
 /// Handler for an invalid route which returns a not found status code.
-pub fn handle_not_found(_: &Context) -> HandleFuture {
-    future::ok(Response::new().with_status(StatusCode::NotFound)).boxed()
+pub fn handle_not_found(service_context: &Context) -> HandleFuture {
+    let context = tera::Context::new();
+    let body = service_context.tera.borrow_mut().render("404.html", context).unwrap();
+    future::ok(Response::new()
+            .with_status(StatusCode::NotFound)
+            .with_header(ContentLength(body.len() as u64))
+            .with_body(body))
+        .boxed()
 }

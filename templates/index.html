@@ -1,8 +1,21 @@
 <html>
   <head>
-    <title>Hello world!</title>
+    <title>Gist blog</title>
   </head>
   <body>
-    <h1>{{ text }}</h1>
+    <h1>Gist blog</h1>
+
+    <form action="javascript:void(0);">
+      Enter your Github username to get started:
+      <input type="text" id="username" name="username">
+      <input type="submit" id="submit" value="Submit">
+    </form>
+
+    <script>
+      document.getElementById('submit').addEventListener('click', function () {
+        var username = document.getElementById('username').value
+        window.location = '/user/' + username
+      })
+    </script>
   </body>
 </html>
