@@ -17,6 +17,7 @@
       Gistid: <input type="text" id="gistid" name="gistid"><br>
       Title: <input type="text" id="title" name="title"><br>
       <input type="submit" id="submit" value="Submit"><br>
+      <p id="error" style="display: none;">An error occurred while publishing the gist</p>
     </form>
 
     <script>
@@ -34,7 +35,12 @@
         xhr.open('POST', '/publish', true)
         xhr.setRequestHeader('Content-type', 'application/json')
         xhr.onload = function () {
-          window.location.reload()
+          if (xhr.status === 200) {
+            window.location.reload()
+          } else {
+            var error = document.getElementById('error')
+            error.style.display = 'block'
+          }
         }
         xhr.send(body)
       })

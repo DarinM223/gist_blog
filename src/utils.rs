@@ -7,6 +7,7 @@ use hyper::header::UserAgent;
 use hyper_tls::HttpsConnector;
 use models;
 use serde_json;
+use std::io;
 use std::rc::Rc;
 
 /// Struct representing the parameters for a gist to publish.
@@ -21,7 +22,9 @@ pub struct PublishRequest {
 pub fn get_gist<'a>(params: PublishRequest,
                     client: Rc<Client<HttpsConnector>>)
                     -> Box<Future<Item = models::Gist, Error = Error>> {
-    let url = format!("https://api.github.com/gists/{}", params.gistid).parse::<Uri>().unwrap();
+    let url = format!("https://api.github.com/gists/{}", params.gistid)
+        .parse::<Uri>()
+        .unwrap();
     let mut req = Request::new(Get, url);
     req.headers_mut().set(UserAgent("gist_blog".to_string()));
 
@@ -36,8 +39,13 @@ pub fn get_gist<'a>(params: PublishRequest,
         // Convert body into JSON, concat all the file markdown contents, and return a Gist.
         .and_then(move |body| {
             let body = String::from_utf8_lossy(&body[..]);
-            // TODO(DarinM223): handle JSON parsing errors.
-            let gist: github::Gist = serde_json::from_str(&body).unwrap();
+            let gist: github::Gist = match serde_json::from_str(&body) {
+                Ok(gist) => gist,
+                Err(_) => {
+                    let io_err = io::Error::new(io::ErrorKind::InvalidData, "Error parsing JSON");
+                    return future::err(Error::Io(io_err));
+                }
+            };
 
             let mut concat_body = String::new();
             for (_, ref file) in &gist.files {

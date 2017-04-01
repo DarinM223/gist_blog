@@ -41,10 +41,12 @@ fn main() {
              listener.local_addr().unwrap());
 
     let service_factory = move || GistBlog::new(cloned_handle.clone());
-    let server = listener.incoming().for_each(move |(socket, addr)| {
-        http.bind_connection(&handle, socket, addr, service_factory());
-        Ok(())
-    });
+    let server = listener
+        .incoming()
+        .for_each(move |(socket, addr)| {
+                      http.bind_connection(&handle, socket, addr, service_factory());
+                      Ok(())
+                  });
 
     lp.run(server).unwrap();
 }
