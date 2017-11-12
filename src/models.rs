@@ -21,7 +21,7 @@ pub struct Gist {
 }
 
 #[derive(Insertable)]
-#[table_name="gists"]
+#[table_name = "gists"]
 pub struct NewGist<'a> {
     pub id: &'a str,
     pub user_id: &'a str,
@@ -41,7 +41,7 @@ impl<'a> NewGist<'a> {
 }
 
 #[derive(Insertable)]
-#[table_name="users"]
+#[table_name = "users"]
 pub struct NewUser<'a> {
     pub id: &'a str,
 }

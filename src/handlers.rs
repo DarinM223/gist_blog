@@ -23,10 +23,11 @@ pub fn handle_root(service_context: &Context) -> HandleFuture {
         .render("index.html", context)
         .unwrap();
 
-    future::ok(Response::new()
-                   .with_header(ContentLength(body.len() as u64))
-                   .with_body(body))
-            .boxed()
+    future::ok(
+        Response::new()
+            .with_header(ContentLength(body.len() as u64))
+            .with_body(body),
+    ).boxed()
 }
 
 /// Handler for GET /user/{username} that shows the user's gists.
@@ -52,10 +53,11 @@ pub fn handle_user(service_context: &Context, req: Request) -> HandleFuture {
         .render("user.html", context)
         .unwrap();
 
-    future::ok(Response::new()
-                   .with_header(ContentLength(html_body.len() as u64))
-                   .with_body(html_body))
-            .boxed()
+    future::ok(
+        Response::new()
+            .with_header(ContentLength(html_body.len() as u64))
+            .with_body(html_body),
+    ).boxed()
 }
 
 /// Handler for GET /gist/{id} that shows a specific gist.
@@ -76,10 +78,11 @@ pub fn handle_gist(service_context: &Context, req: Request) -> HandleFuture {
                 .borrow_mut()
                 .render("gist.html", context)
                 .unwrap();
-            future::ok(Response::new()
-                           .with_header(ContentLength(html_body.len() as u64))
-                           .with_body(html_body))
-                    .boxed()
+            future::ok(
+                Response::new()
+                    .with_header(ContentLength(html_body.len() as u64))
+                    .with_body(html_body),
+            ).boxed()
         }
         Err(_) => handle_not_found(service_context),
     }
@@ -92,25 +95,25 @@ pub fn handle_publish(service_context: &Context, req: Request) -> HandleFuture {
     let (_, _, _, _, body) = req.deconstruct();
     let client = service_context.client.clone();
     let pool = service_context.pool.clone();
-    let response =
-        body.fold(vec![], |mut acc, chunk| {
-                acc.extend_from_slice(chunk.as_ref());
-                Ok::<_, Error>(acc)
-            })
-            .and_then(move |body| {
-                          let body_str = String::from_utf8(body).unwrap();
-                          let serialized: PublishRequest = serde_json::from_str(&body_str).unwrap();
-                          utils::get_gist(serialized, client)
-                      })
-            .and_then(move |new_gist| {
-                          let conn = pool.get().unwrap();
-                          diesel::insert_or_replace(&NewGist::from(&new_gist))
-                              .into(gists::table)
-                              .execute(&*conn)
-                              .expect("Error saving new gist");
-                          future::ok(Response::new().with_status(StatusCode::Ok)).boxed()
-                      })
-            .or_else(|_| future::ok(Response::new().with_status(StatusCode::BadRequest)));
+    let response = body.fold(vec![], |mut acc, chunk| {
+        acc.extend_from_slice(chunk.as_ref());
+        Ok::<_, Error>(acc)
+    }).and_then(move |body| {
+            let body_str = String::from_utf8(body).unwrap();
+            let serialized: PublishRequest = serde_json::from_str(&body_str).unwrap();
+            utils::get_gist(serialized, client)
+        })
+        .and_then(move |new_gist| {
+            let conn = pool.get().unwrap();
+            diesel::insert_or_replace(&NewGist::from(&new_gist))
+                .into(gists::table)
+                .execute(&*conn)
+                .expect("Error saving new gist");
+            future::ok(Response::new().with_status(StatusCode::Ok)).boxed()
+        })
+        .or_else(|_| {
+            future::ok(Response::new().with_status(StatusCode::BadRequest))
+        });
 
     Box::new(response)
 }
@@ -123,9 +126,10 @@ pub fn handle_not_found(service_context: &Context) -> HandleFuture {
         .borrow_mut()
         .render("404.html", context)
         .unwrap();
-    future::ok(Response::new()
-                   .with_status(StatusCode::NotFound)
-                   .with_header(ContentLength(body.len() as u64))
-                   .with_body(body))
-            .boxed()
+    future::ok(
+        Response::new()
+            .with_status(StatusCode::NotFound)
+            .with_header(ContentLength(body.len() as u64))
+            .with_body(body),
+    ).boxed()
 }

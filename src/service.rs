@@ -4,7 +4,7 @@ use handlers;
 use hyper;
 use hyper::{Get, Post};
 use hyper::client::Client;
-use hyper::server::{Service, Request, Response};
+use hyper::server::{Request, Response, Service};
 use hyper_tls::HttpsConnector;
 use r2d2::{Config, Pool};
 use r2d2_diesel::ConnectionManager;
@@ -47,7 +47,9 @@ pub struct GistBlog {
 
 impl GistBlog {
     pub fn new(handle: Handle) -> GistBlog {
-        GistBlog { context: Context::new(handle) }
+        GistBlog {
+            context: Context::new(handle),
+        }
     }
 }
 

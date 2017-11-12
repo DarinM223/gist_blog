@@ -19,9 +19,10 @@ pub struct PublishRequest {
 }
 
 /// Retrieves the gist from the request parameters.
-pub fn get_gist<'a>(params: PublishRequest,
-                    client: Rc<Client<HttpsConnector>>)
-                    -> Box<Future<Item = models::Gist, Error = Error>> {
+pub fn get_gist<'a>(
+    params: PublishRequest,
+    client: Rc<Client<HttpsConnector>>,
+) -> Box<Future<Item = models::Gist, Error = Error>> {
     let url = format!("https://api.github.com/gists/{}", params.gistid)
         .parse::<Uri>()
         .unwrap();
